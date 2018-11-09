@@ -6,7 +6,8 @@
   "scripts": {
     "test": "echo 'no test specified'",
     "build": "webpack --progress --colors",
-    "dev": "nodemon client/server.js --exec babel-node"
+    "dev": "nodemon client/server.js --exec babel-node",
+    "client": "pushd client; python -m SimpleHTTPServer 8000 & open '/Applications/Google Chrome.app/'; popd;"
   },
   "repository": {
     "type": "git",
