@@ -1,4 +1,10 @@
-body, html {
+html, body {
   margin: 0;
   position: relative;
+}
+
+canvas {
+  margin: 0;
+  position: relative;
+  border: solid red 10px;
 }
