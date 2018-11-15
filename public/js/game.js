@@ -24,11 +24,13 @@ function preload()
   this.load.image('ship', 'assets/ship.png');
 }
 
-function create() {
+function create()
+{
   var self = this;
   this.disableVisibilityChange = true;
   this.socket = io();
   this.otherPlayers = this.physics.add.group();
+
   this.socket.on('currentPlayers', function (players) {
     Object.keys(players).forEach(function (id) {
       if (players[id].playerId === self.socket.id) {
@@ -38,24 +40,29 @@ function create() {
       }
     });
   });
+
   this.socket.on('newPlayer', function (playerInfo) {
     addOtherPlayers(self, playerInfo);
   });
+
   this.socket.on('disconnect', function (playerId) {
     self.otherPlayers.getChildren().forEach(function (otherPlayer) {
       if (playerId === otherPlayer.playerId) {
         otherPlayer.destroy();
       }
     });
+    
   });
 
   this.socket.on('playerMoved', function (playerInfo) {
     self.otherPlayers.getChildren().forEach(function (otherPlayer) {
-      if (playerInfo.playerId === otherPlayer.playerId) {
+      if (playerInfo.playerId === otherPlayer.playerId) {//how to get a reference to this?
         otherPlayer.setRotation(playerInfo.rotation);
         otherPlayer.setPosition(playerInfo.x, playerInfo.y);
       }
     });
+    console.log(self.otherPlayers.getChildren());
+
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();

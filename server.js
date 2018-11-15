@@ -29,20 +29,23 @@ io.on('connection', function (socket) {
 
   // when a player moves, update the player data
   socket.on('playerMovement', function (movementData) {
-    players[socket.id].x = movementData.x;
-    players[socket.id].y = movementData.y;
-    players[socket.id].rotation = movementData.rotation;
+    players[socket.id] = {...movementData};
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', players[socket.id]);
   });
 });
 
+function getRandom(range) {
+  const padding = 0.1 * range;
+  const randRange = range - 2*padding
+  return Math.floor(Math.random() * randRange) + padding;
+}
 // create a new player and add it to our players object
 function addPlayer(playerId) {
   players[playerId] = {
-    rotation: 0,
-    x: Math.floor(Math.random() * 700) + 50,
-    y: Math.floor(Math.random() * 500) + 50,
+    rotation: getRandom(2*Math.PI),
+    x: getRandom(800),
+    y: getRandom(600),
     playerId: playerId,
     team: (Math.floor(Math.random() * 2) == 0) ? 'red' : 'blue'//TODO replace with color
   };
