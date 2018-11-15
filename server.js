@@ -48,6 +48,7 @@ function addPlayer(playerId) {
   };
 }
 
-server.listen(8081, function () {
+const PORT = 8000;
+server.listen(PORT, function () {
   console.log(`Listening on ${server.address().port}`);
 });
