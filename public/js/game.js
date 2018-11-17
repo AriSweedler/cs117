@@ -14,7 +14,8 @@ var config = {
     preload: preload,
     create: create,
     update: update
-  }
+  },
+  speed: 150
 };
 
 var game = new Phaser.Game(config);
@@ -22,7 +23,7 @@ var game = new Phaser.Game(config);
 function preload()
 {
   this.load.image('ship', 'assets/ship.png');
-  this.load.image('red', 'assets/red.png');
+  this.load.image('wall', 'assets/yellow.png');
 }
 
 function create()
@@ -31,11 +32,13 @@ function create()
   this.disableVisibilityChange = true;
   this.socket = io();
   this.otherPlayers = this.physics.add.group();
+  this.walls = this.physics.add.staticGroup();
 
   this.socket.on('currentPlayers', function (players) {
     Object.keys(players).forEach(function (id) {
       if (players[id].playerId === self.socket.id) {
         addPlayer(self, players[id]);
+        self.physics.add.overlap(self.ship, self.walls, hitWall, null, this);
       } else {
         addOtherPlayers(self, players[id]);
       }
@@ -57,12 +60,12 @@ function create()
 
   this.socket.on('playerMoved', function (playerInfo) {
     self.otherPlayers.getChildren().forEach(function (otherPlayer) {
-      if (playerInfo.playerId === otherPlayer.playerId) {//how to get a reference to this?
+      if (playerInfo.playerId === otherPlayer.playerId) {
         otherPlayer.setRotation(playerInfo.rotation);
         otherPlayer.setPosition(playerInfo.x, playerInfo.y);
+        self.walls.create(playerInfo.x, playerInfo.y, 'wall');
       }
     });
-    console.log(self.otherPlayers.getChildren());
 
   });
 
@@ -71,40 +74,43 @@ function create()
 
 function update()
 {
-  if (this.ship) {
-    // emit player movement
-    var x = this.ship.x;
-    var y = this.ship.y;
-    var r = this.ship.rotation;
-    if (this.ship.oldPosition && (x !== this.ship.oldPosition.x || y !== this.ship.oldPosition.y || r !== this.ship.oldPosition.rotation)) {
-      this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation });
-    }
-
-    // save old position data
-    this.ship.oldPosition = {
-      x: this.ship.x,
-      y: this.ship.y,
-      rotation: this.ship.rotation
-    };
-
-    trail = self.physics.add.image(playerInfo.x, playerInfo.y, 'ship').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
-
-    if (this.cursors.left.isDown) {
-      this.ship.setAngularVelocity(-150);
-    } else if (this.cursors.right.isDown) {
-      this.ship.setAngularVelocity(150);
-    } else {
-      this.ship.setAngularVelocity(0);
-    }
-  
-    if (this.cursors.up.isDown) {
-      this.physics.velocityFromRotation(this.ship.rotation + 1.5, 100, this.ship.body.acceleration);
-    } else {
-      this.ship.setAcceleration(0);
-    }
-  
-    // this.physics.world.wrap(this.ship, 5);
+  if (!this.ship || this.ship.dead === true) {
+    return;
   }
+
+  /* clamp player position - for now  */
+  if (this.ship.x < 0 || this.ship.x > config.width) {
+    let diff = this.ship.x - config.width/2
+    this.ship.x -= 2*diff;
+  }
+  if (this.ship.y < 0 || this.ship.y > config.height) {
+    let diff = this.ship.y - config.height/2
+    this.ship.y -= 2*diff;
+  }
+
+  // emit player movement
+  var x = this.ship.x;
+  var y = this.ship.y;
+  var r = this.ship.rotation;
+  if (this.ship.oldPosition && (x !== this.ship.oldPosition.x || y !== this.ship.oldPosition.y || r !== this.ship.oldPosition.rotation)) {
+    this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation });
+  }
+
+  // save old position data
+  this.ship.oldPosition = {
+    x: this.ship.x,
+    y: this.ship.y,
+    rotation: this.ship.rotation
+  };
+
+  if (this.cursors.left.isDown) {
+    this.ship.setAngularVelocity(-config.speed);
+  } else if (this.cursors.right.isDown) {
+    this.ship.setAngularVelocity(config.speed);
+  } else {
+    this.ship.setAngularVelocity(0);
+  }
+  this.physics.velocityFromRotation(this.ship.rotation + 1.5, config.speed, this.ship.body.velocity);
 }
 
 function addPlayer(self, playerInfo) {
@@ -116,7 +122,7 @@ function addPlayer(self, playerInfo) {
   }
   self.ship.setDrag(100);
   self.ship.setAngularDrag(100);
-  self.ship.setMaxVelocity(200);
+  self.ship.dead = false;
 }
 
 function addOtherPlayers(self, playerInfo) {
@@ -128,4 +134,10 @@ function addOtherPlayers(self, playerInfo) {
   }
   otherPlayer.playerId = playerInfo.playerId;
   self.otherPlayers.add(otherPlayer);
+}
+
+function hitWall() {
+  self.ship.dead = true;
+  /* play death animation */
+  console.log("Collision");
 }
