@@ -53,7 +53,7 @@ function addPlayer(playerId) {
     x: getRandom(800),
     y: getRandom(600),
     playerId: playerId,
-    team: (Math.floor(Math.random() * 2) == 0) ? 'red' : 'blue'//TODO replace with color
+    color: (Math.floor(Math.random() * 2) == 0) ? 0xff0000 : 0x0000ff
   };
 }
 

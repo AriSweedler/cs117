@@ -24,7 +24,7 @@ var game = new Phaser.Game(config);
 function preload()
 {
   this.load.image('ship', 'assets/ship.png');
-  this.load.image('wall', 'assets/yellow.png');
+  this.load.image('wall', 'assets/white.png');
 }
 
 function create()
@@ -117,11 +117,7 @@ function update()
 
 function addPlayer(self, playerInfo) {
   self.ship = self.physics.add.image(playerInfo.x, playerInfo.y, 'ship').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
-  if (playerInfo.team === 'blue') {
-    self.ship.setTint(0x0000ff);
-  } else {
-    self.ship.setTint(0xff0000);
-  }
+  self.ship.setTint(playerInfo.color);
   self.ship.setDrag(100);
   self.ship.setAngularDrag(100);
   global.ship = self.ship;
@@ -130,12 +126,8 @@ function addPlayer(self, playerInfo) {
 
 function addOtherPlayers(self, playerInfo) {
   const otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'ship').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
-  if (playerInfo.team === 'blue') {
-    otherPlayer.setTint(0x0000ff);
-  } else {
-    otherPlayer.setTint(0xff0000);
-  }
   otherPlayer.playerId = playerInfo.playerId;
+  global.ship.setTint(playerInfo.color);
   self.otherPlayers.add(otherPlayer);
 }
 
