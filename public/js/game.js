@@ -95,7 +95,9 @@ function update()
   var r = this.ship.rotation;
   if (this.ship.oldPosition && (x !== this.ship.oldPosition.x || y !== this.ship.oldPosition.y || r !== this.ship.oldPosition.rotation)) {
     this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation });
-    global.myWalls.create(x, y, 'wall')//.setDisplaySize(10, 10);
+    let wall = global.myWalls.create(x, y, 'wall')
+    // wall.setDisplaySize(10, 10);
+    wall.setTint(global.color);
   }
 
   // save old position data
@@ -122,12 +124,13 @@ function addPlayer(self, playerInfo) {
   self.ship.setAngularDrag(100);
   global.ship = self.ship;
   global.dead = false;
+  global.color = playerInfo.color;
 }
 
 function addOtherPlayers(self, playerInfo) {
   const otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'ship').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
   otherPlayer.playerId = playerInfo.playerId;
-  global.ship.setTint(playerInfo.color);
+  otherPlayer.setTint(playerInfo.color);
   self.otherPlayers.add(otherPlayer);
 }
 
