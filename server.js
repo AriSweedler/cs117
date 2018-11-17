@@ -28,7 +28,7 @@ io.on('connection', function (socket) {
   });
 
   socket.on('playerDied', function () {
-    console.log('player hit a wall! Too bad.');
+    // console.log('player hit a wall! Too bad.');
     // remove this player from our players object
     delete players[socket.id];
   });
@@ -39,6 +39,9 @@ io.on('connection', function (socket) {
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', players[socket.id]);
   });
+
+  // const numPlayers = Object.keys(players).length;
+  /* when there're 3 players, let them start the game */
 });
 
 function getRandom(range) {

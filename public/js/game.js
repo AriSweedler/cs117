@@ -65,7 +65,8 @@ function create()
       if (playerInfo.playerId === otherPlayer.playerId) {
         otherPlayer.setRotation(playerInfo.rotation);
         otherPlayer.setPosition(playerInfo.x, playerInfo.y);
-        self.walls.create(playerInfo.x, playerInfo.y, 'wall')//.setDisplaySize(10, 10);
+        const wall = self.walls.create(playerInfo.x, playerInfo.y, 'wall')
+        wall.setTint(playerInfo.color);
       }
     });
   });
@@ -94,7 +95,7 @@ function update()
   var y = this.ship.y;
   var r = this.ship.rotation;
   if (this.ship.oldPosition && (x !== this.ship.oldPosition.x || y !== this.ship.oldPosition.y || r !== this.ship.oldPosition.rotation)) {
-    this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation });
+    this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation, color: global.color });
     let wall = global.myWalls.create(x, y, 'wall')
     // wall.setDisplaySize(10, 10);
     wall.setTint(global.color);
