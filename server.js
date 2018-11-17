@@ -27,6 +27,12 @@ io.on('connection', function (socket) {
     io.emit('disconnect', socket.id);
   });
 
+  socket.on('playerDied', function () {
+    console.log('player hit a wall! Too bad.');
+    // remove this player from our players object
+    delete players[socket.id];
+  });
+
   // when a player moves, update the player data
   socket.on('playerMovement', function (movementData) {
     players[socket.id] = {...movementData};

@@ -17,6 +17,7 @@ var config = {
   },
   speed: 150
 };
+var global = {}
 
 var game = new Phaser.Game(config);
 
@@ -30,9 +31,10 @@ function create()
 {
   var self = this;
   this.disableVisibilityChange = true;
-  this.socket = io();
+  global.socket = this.socket = io();
+  global.walls = this.walls = this.physics.add.staticGroup();
+  global.myWalls = this.myWalls = this.physics.add.staticGroup();
   this.otherPlayers = this.physics.add.group();
-  this.walls = this.physics.add.staticGroup();
 
   this.socket.on('currentPlayers', function (players) {
     Object.keys(players).forEach(function (id) {
@@ -63,10 +65,9 @@ function create()
       if (playerInfo.playerId === otherPlayer.playerId) {
         otherPlayer.setRotation(playerInfo.rotation);
         otherPlayer.setPosition(playerInfo.x, playerInfo.y);
-        self.walls.create(playerInfo.x, playerInfo.y, 'wall');
+        self.walls.create(playerInfo.x, playerInfo.y, 'wall')//.setDisplaySize(10, 10);
       }
     });
-
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -74,7 +75,7 @@ function create()
 
 function update()
 {
-  if (!this.ship || this.ship.dead === true) {
+  if (!this.ship || global.dead === true) {
     return;
   }
 
@@ -94,6 +95,7 @@ function update()
   var r = this.ship.rotation;
   if (this.ship.oldPosition && (x !== this.ship.oldPosition.x || y !== this.ship.oldPosition.y || r !== this.ship.oldPosition.rotation)) {
     this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation });
+    global.myWalls.create(x, y, 'wall')//.setDisplaySize(10, 10);
   }
 
   // save old position data
@@ -122,7 +124,8 @@ function addPlayer(self, playerInfo) {
   }
   self.ship.setDrag(100);
   self.ship.setAngularDrag(100);
-  self.ship.dead = false;
+  global.ship = self.ship;
+  global.dead = false;
 }
 
 function addOtherPlayers(self, playerInfo) {
@@ -137,7 +140,9 @@ function addOtherPlayers(self, playerInfo) {
 }
 
 function hitWall() {
-  self.ship.dead = true;
+  global.socket.emit('playerDied');
+  global.dead = true;
+  global.ship.disableBody(true, false);
   /* play death animation */
   console.log("Collision");
 }
