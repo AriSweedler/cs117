@@ -3,7 +3,9 @@ const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io').listen(server);
 const players = {};
-
+const global = {
+  playersNeeded: 3
+}
 app.use(express.static(__dirname + '/public'));
 
 app.get('/', function (req, res) {
@@ -27,8 +29,8 @@ io.on('connection', function (socket) {
     // emit a message to all players to remove this player
     io.emit('disconnect', socket.id);
 
-    if (numPlayers() < 3) {
-      console.log("Game paused");
+    if (numPlayers() < global.playersNeeded) {
+      console.log("Pausing game");
       socket.broadcast.emit('pause', {pause: true});
     }
   });
@@ -40,17 +42,17 @@ io.on('connection', function (socket) {
   });
 
   // when a player moves, update the player data
-  socket.on('playerMovement', function (movementData) {
-    players[socket.id] = {...movementData};
+  socket.on('playerMovement', function (playerData) {
+    players[socket.id] = {...playerData};
     // emit a message to all players about the player that moved
     socket.broadcast.emit('playerMoved', players[socket.id]);
   });
 
   /* when there're 3 players, let them start the game */
   const numPlayers = () => Object.keys(players).length;
-  if (numPlayers() >= 3) {
+  if (numPlayers() >= global.playersNeeded) {
+    setTimeout(() => {socket.broadcast.emit('pause', {pause: false});}, 2000);
     console.log("Game is ready to start!");
-    socket.broadcast.emit('pause', {pause: false});
   }
 
 });
