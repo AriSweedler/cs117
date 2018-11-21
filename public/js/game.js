@@ -14,17 +14,22 @@ var config = {
     preload: preload,
     create: create,
     update: update
-  },
-  speed: 150
+  }
 };
-var global = {}
+var global = {
+  playerSpeed: 150,
+  wallDelay: 10,
+  wallRadius: 8,
+  playerRadius: 5,
+  pause: true
+}
 
 var game = new Phaser.Game(config);
 
 function preload()
 {
-  this.load.image('ship', 'assets/ship.png');
-  this.load.image('wall', 'assets/white.png');
+  this.load.image('player', 'assets/player.png');
+  this.load.image('wall', 'assets/wall-circle.png');
 }
 
 function create()
@@ -33,7 +38,6 @@ function create()
   this.disableVisibilityChange = true;
   global.socket = this.socket = io();
   global.walls = this.walls = this.physics.add.staticGroup();
-  global.myWalls = this.myWalls = this.physics.add.staticGroup();
   this.otherPlayers = this.physics.add.group();
 
   this.socket.on('currentPlayers', function (players) {
@@ -45,6 +49,10 @@ function create()
         addOtherPlayers(self, players[id]);
       }
     });
+  });
+
+  this.socket.on('pause', function (gameState) {
+    global.pause = gameState.pause;
   });
 
   this.socket.on('newPlayer', function (playerInfo) {
@@ -66,7 +74,8 @@ function create()
         otherPlayer.setRotation(playerInfo.rotation);
         otherPlayer.setPosition(playerInfo.x, playerInfo.y);
         const wall = self.walls.create(playerInfo.x, playerInfo.y, 'wall')
-        wall.setTint(playerInfo.color);
+            .setTint(playerInfo.color)
+            .setCircle(global.wallRadius);
       }
     });
   });
@@ -76,7 +85,7 @@ function create()
 
 function update()
 {
-  if (!this.ship || global.dead === true) {
+  if (!this.ship || global.pause || global.dead === true) {
     return;
   }
 
@@ -90,46 +99,39 @@ function update()
     this.ship.y -= 2*diff;
   }
 
-  // emit player movement
-  var x = this.ship.x;
-  var y = this.ship.y;
-  var r = this.ship.rotation;
-  if (this.ship.oldPosition && (x !== this.ship.oldPosition.x || y !== this.ship.oldPosition.y || r !== this.ship.oldPosition.rotation)) {
-    this.socket.emit('playerMovement', { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation, color: global.color });
-    let wall = global.myWalls.create(x, y, 'wall')
-    // wall.setDisplaySize(10, 10);
-    wall.setTint(global.color);
-  }
+  /* emit player movement */
+  const shipState = { x: this.ship.x, y: this.ship.y, rotation: this.ship.rotation, color: global.color };
+  this.socket.emit('playerMovement', shipState);
 
-  // save old position data
-  this.ship.oldPosition = {
-    x: this.ship.x,
-    y: this.ship.y,
-    rotation: this.ship.rotation
-  };
+  /* place the wall far enough behind the player to prevent collision */
+  placeWall(this.ship);
 
   if (this.cursors.left.isDown) {
-    this.ship.setAngularVelocity(-config.speed);
+    this.ship.setAngularVelocity(-global.playerSpeed);
   } else if (this.cursors.right.isDown) {
-    this.ship.setAngularVelocity(config.speed);
+    this.ship.setAngularVelocity(global.playerSpeed);
   } else {
     this.ship.setAngularVelocity(0);
   }
-  this.physics.velocityFromRotation(this.ship.rotation + 1.5, config.speed, this.ship.body.velocity);
+  const direction = this.ship.body.velocity;
+  this.physics.velocityFromRotation(this.ship.rotation, global.playerSpeed, direction);
 }
 
 function addPlayer(self, playerInfo) {
-  self.ship = self.physics.add.image(playerInfo.x, playerInfo.y, 'ship').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
+  self.ship = self.physics.add.image(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5);
   self.ship.setTint(playerInfo.color);
   self.ship.setDrag(100);
   self.ship.setAngularDrag(100);
+  self.ship.oldPosition = new Array(global.wallDelay).fill({x: -100, y: -100});
+  /* set the collision body of this dude to a circle of radius 8 */
+  self.ship.setCircle(global.playerRadius);
   global.ship = self.ship;
   global.dead = false;
   global.color = playerInfo.color;
 }
 
 function addOtherPlayers(self, playerInfo) {
-  const otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'ship').setOrigin(0.5, 0.5).setDisplaySize(53, 40);
+  const otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5);
   otherPlayer.playerId = playerInfo.playerId;
   otherPlayer.setTint(playerInfo.color);
   self.otherPlayers.add(otherPlayer);
@@ -141,4 +143,16 @@ function hitWall() {
   global.ship.disableBody(true, false);
   /* play death animation */
   console.log("Collision");
+}
+
+function placeWall(ship) {
+  /* add to the start of the array */
+  ship.oldPosition.unshift({x: ship.x, y: ship.y});
+  /* pop off the back */
+  const oldPos = ship.oldPosition.pop();
+
+  /* place a new wall at the old position of the ship */
+  let wall = global.walls.create(oldPos.x, oldPos.y, 'wall')
+      .setTint(global.color)
+      .setCircle(global.wallRadius);
 }

@@ -23,8 +23,14 @@ io.on('connection', function (socket) {
     console.log('user disconnected');
     // remove this player from our players object
     delete players[socket.id];
+
     // emit a message to all players to remove this player
     io.emit('disconnect', socket.id);
+
+    if (numPlayers() < 3) {
+      console.log("Game paused");
+      socket.broadcast.emit('pause', {pause: true});
+    }
   });
 
   socket.on('playerDied', function () {
@@ -40,8 +46,13 @@ io.on('connection', function (socket) {
     socket.broadcast.emit('playerMoved', players[socket.id]);
   });
 
-  // const numPlayers = Object.keys(players).length;
   /* when there're 3 players, let them start the game */
+  const numPlayers = () => Object.keys(players).length;
+  if (numPlayers() >= 3) {
+    console.log("Game is ready to start!");
+    socket.broadcast.emit('pause', {pause: false});
+  }
+
 });
 
 function getRandom(range) {
