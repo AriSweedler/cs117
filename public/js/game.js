@@ -21,7 +21,8 @@ var global = {
   wallDelay: 7,
   wallRadius: 8,
   playerRadius: 5,
-  pause: true
+  players: {},
+  pause: false
 }
 
 var game = new Phaser.Game(config);
@@ -40,43 +41,41 @@ function create()
   global.walls = this.walls = this.physics.add.staticGroup();
   global.otherPlayers = this.physics.add.group();
 
-  this.socket.on('currentPlayers', function (players) {
-    Object.keys(players).forEach(function (id) {
-      if (players[id].playerId === self.socket.id) {
+  /* Recv all the players in the game from the server, place them in the start position */
+  this.socket.on('allPlayers', function (players) {
+    for (let id in players) {
+      if (id == global.socket.id) {
         addMyself(self, players[id]);
       } else {
         addOtherPlayers(self, players[id]);
       }
-    });
-  });
-
-  this.socket.on('pause', function (gameState) {
-    global.pause = gameState.pause;
-  });
-
-  this.socket.on('newPlayer', function (playerInfo) {
-    /* clear all walls when a new player comes */
-    global.walls.clear(true, true);
-    addOtherPlayers(self, playerInfo);
+    }
+    /* TODO: countdown/wait for 3 seconds */
   });
 
   this.socket.on('disconnect', function (playerId) {
     global.otherPlayers.getChildren().forEach(function (otherPlayer) {
       if (playerId === otherPlayer.playerId) {
+        console.log(`Player ${playerId} disconnected`);
         otherPlayer.destroy();
       }
     });
-    
   });
 
-  this.socket.on('playerMoved', function (playerInfo) {
-    global.otherPlayers.getChildren().forEach(function (otherPlayer) {
-      if (playerInfo.playerId === otherPlayer.playerId) {
-        otherPlayer.setRotation(playerInfo.rotation);
-        otherPlayer.setPosition(playerInfo.x, playerInfo.y);
-        placeWall(otherPlayer);
+  /* Recv position for all the players in the game, update their positions */
+  this.socket.on('tick', function (players) {
+    for (let id in players) {
+      if (id == global.socket) {
+        continue;
       }
-    });
+      global.otherPlayers.getChildren().forEach(function (otherPlayer) {
+        if (id === otherPlayer.playerId) {
+          otherPlayer.setRotation(players[id].rotation);
+          otherPlayer.setPosition(players[id].x, players[id].y);
+          placeWall(otherPlayer);
+        }
+      });
+    };
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -84,7 +83,7 @@ function create()
 
 function update()
 {
-  if (!this.ship || global.pause || ship.dead === true) {
+  if (!ship || global.pause || ship.dead === true) {
     return;
   }
   
@@ -120,6 +119,9 @@ function update()
 
 var ship;
 function addMyself(self, playerInfo) {
+  /*  Don't add myself twice */
+  if (global.ship) {return;}
+
   ship = global.ship = self.ship = self.physics.add.image(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5);
   ship.color = playerInfo.color;
   ship.dead = false;
@@ -135,6 +137,16 @@ function addMyself(self, playerInfo) {
 }
 
 function addOtherPlayers(self, playerInfo) {
+  /* Don't add other player twice */
+  for (let id in global.players) {
+    if (id === playerInfo.playerId) {
+      console.log("player already added");
+      return;
+    }
+  }
+  console.log(`Adding player:`);
+  console.log(playerInfo);
+
   /* create other player object */
   let otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5).setTint(playerInfo.color);
 
