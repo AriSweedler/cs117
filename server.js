@@ -41,7 +41,9 @@ io.on('connection', (socket) => {
 
   // when a player moves, update the player data
   socket.on('playerMovement', function (playerData) {
-    players[socket.id] = {...playerData};
+    players[socket.id].x = playerData.x;
+    players[socket.id].y = playerData.y;
+    players[socket.id].rotation = playerData.rotation;
   });
 
   /* Send a 'tick' update to all players 60 times a second */
