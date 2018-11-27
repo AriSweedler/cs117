@@ -1,4 +1,5 @@
-#modal {
+/* modal styling */
+.modal {
   position: fixed; /* Stay in place */
   z-index: 1; /* Sit on top */
   left: 0;
@@ -11,7 +12,8 @@
   background-color: rgba(0,0,0,0.4); /* Black w/ opacity */
 }
 
-#ready-btn {
+/* modal CONTENT styling */
+.modal * {
   color: #aaa;
   font-size: 28px;
   font-weight: bold;

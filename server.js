@@ -32,9 +32,8 @@ io.on('connection', (socket) => {
     for (let id in players) {
       playersReady += players[id].ready?1:0;
     }
-    console.log("There are " + playersReady + " players ready");
 
-    if (playersReady >= global.playersNeeded) {
+    if (playersReady >= global.playersNeeded && global.pause) {
       console.log("START");
       global.pause = false;
       io.sockets.emit('pause', false);
@@ -97,7 +96,8 @@ function addPlayer(playerId) {
     y: getRandom(600),
     playerId: playerId,
     ready: false,
-    color: (Math.floor(Math.random() * 2) == 0) ? 0xff0000 : 0x0000ff
+    color: (Math.floor(Math.random() * 2) == 0) ? 0xff0000 : 0x0000ff,
+    name: "bob"
   };
 }
 

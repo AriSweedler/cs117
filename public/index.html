@@ -13,11 +13,14 @@
     <script src="js/game.js"></script>
 
 
-    <div id="modal">
+    <div class="modal">
       <button id="ready-btn" value="ready"
         onclick="global.ready = true;"
         disabled
       >I am ready</button>
+    </div>
+    <div class="modal" id="winner-modal" style="display: none">
+      <h1>Winner is '<span id="winner"></span>'!</h1>
     </div>
   </body>
 

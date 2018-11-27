@@ -66,14 +66,17 @@ function create()
 
   this.socket.on('areYouReady', function () {
     if (global.ready === true) {
-      document.getElementById('modal').style.display = 'none';
+      document.querySelector('.modal').style.display = 'none';
       self.socket.emit('ready', null);
     }
   });
 
   /* Recv position for all the players in the game, update their positions */
   this.socket.on('tick', function (players) {
+    let playersLeft = 0;
     for (let id in players) {
+      playersLeft++;
+      global.winner = id;
       if (id == global.socket) {
         continue;
       }
@@ -85,6 +88,12 @@ function create()
         }
       });
     };
+
+    if (playersLeft == 1 && !global.pause) {
+      console.log(`${global.winner} is the winner`);
+      document.getElementById('winner-modal').style.display = 'block';
+      document.getElementById('winner').innerHTML = global.winner;
+    }
   });
 
   this.socket.on('gameReady', function () {
@@ -162,8 +171,6 @@ function addOtherPlayers(self, playerInfo) {
       return;
     }
   }
-  console.log(`Adding player:`);
-  console.log(playerInfo);
 
   /* create other player object */
   let otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5).setTint(playerInfo.color);
