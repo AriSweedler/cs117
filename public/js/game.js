@@ -22,7 +22,8 @@ var global = {
   wallRadius: 8,
   playerRadius: 5,
   players: {},
-  pause: false
+  pause: true,
+  ready: false
 }
 
 var game = new Phaser.Game(config);
@@ -43,6 +44,8 @@ function create()
 
   /* Recv all the players in the game from the server, place them in the start position */
   this.socket.on('allPlayers', function (players) {
+    /* clear walls */
+    global.walls.clear(true, true);
     for (let id in players) {
       if (id == global.socket.id) {
         addMyself(self, players[id]);
@@ -50,7 +53,6 @@ function create()
         addOtherPlayers(self, players[id]);
       }
     }
-    /* TODO: countdown/wait for 3 seconds */
   });
 
   this.socket.on('disconnect', function (playerId) {
@@ -60,6 +62,13 @@ function create()
         otherPlayer.destroy();
       }
     });
+  });
+
+  this.socket.on('areYouReady', function () {
+    if (global.ready === true) {
+      document.getElementById('modal').style.display = 'none';
+      self.socket.emit('ready', null);
+    }
   });
 
   /* Recv position for all the players in the game, update their positions */
@@ -76,6 +85,15 @@ function create()
         }
       });
     };
+  });
+
+  this.socket.on('gameReady', function () {
+    /* The game is ready. Players can now say that they are ready. When all players say this, game starts */
+    document.getElementById('ready-btn').disabled = false;
+  });
+
+  this.socket.on('pause', function (value) {
+    global.pause = value;
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -157,7 +175,7 @@ function addOtherPlayers(self, playerInfo) {
   otherPlayer.x = playerInfo.x;
   otherPlayer.y = playerInfo.y;
   /* allow other player to place walls */
-  otherPlayer.wallPosition = new Array(global.wallDelay).fill({x: -100, y: -100});
+  otherPlayer.wallPosition = new Array(global.wallDelay + 10).fill({x: -100, y: -100});
 
   /* add otherPlayer to the "otherPlayers" physics group */
   global.otherPlayers.add(otherPlayer);

@@ -5,7 +5,8 @@ const io = require('socket.io').listen(server);
 const players = {};
 const numPlayers = () => Object.keys(players).length;
 const global = {
-  playersNeeded: 3
+  playersNeeded: 2,
+  pause: true
 }
 
 app.use(express.static(__dirname + '/public'));
@@ -18,11 +19,27 @@ io.on('connection', (socket) => {
   console.log('a user connected');
   addPlayer(socket.id);
 
-  setTimeout(()=>{return null}, 1000);
-
   // send the players object to all players
   io.sockets.emit('allPlayers', players);
-  // socket.broadcast.emit('allPlayers', players);
+  if (numPlayers() >= global.playersNeeded) {
+    console.log("Awaiting confirmation from all players");
+    io.sockets.emit('gameReady', players);
+  }
+
+  socket.on('ready', function() {
+    players[socket.id].ready = true;
+    let playersReady = 0;
+    for (let id in players) {
+      playersReady += players[id].ready?1:0;
+    }
+    console.log("There are " + playersReady + " players ready");
+
+    if (playersReady >= global.playersNeeded) {
+      console.log("START");
+      global.pause = false;
+      io.sockets.emit('pause', false);
+    }
+  });
 
   socket.on('disconnect', function () {
     console.log('user disconnected');
@@ -46,16 +63,24 @@ io.on('connection', (socket) => {
     players[socket.id].rotation = playerData.rotation;
   });
 
-  /* Send a 'tick' update to all players 60 times a second */
-  const loop = () => {
-    setTimeout(() => {
-      socket.broadcast.emit('tick', players);
-      loop();
-    }, 1000/60);
-  }
-  loop();
+    /* Send a 'tick' update to all players 60 times a second */
+    const checkReadyLoop = () => {
+      setTimeout(() => {
+        io.emit('areYouReady', null);
+        if (global.pause !== false) {
+          checkReadyLoop();
+        }
+      }, 1000);
+    }
+    checkReadyLoop();
   
-
+    const loop = () => {
+      setTimeout(() => {
+        io.emit('tick', players);
+        loop();
+      }, 1000/60);
+    }
+    loop();
 });
 
 function getRandom(range) {
@@ -71,6 +96,7 @@ function addPlayer(playerId) {
     x: getRandom(800),
     y: getRandom(600),
     playerId: playerId,
+    ready: false,
     color: (Math.floor(Math.random() * 2) == 0) ? 0xff0000 : 0x0000ff
   };
 }
