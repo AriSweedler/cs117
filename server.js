@@ -16,6 +16,22 @@ app.get('/', function (req, res) {
 });
 
 io.on('connection', (socket) => {
+  const checkReadyLoop = () => {
+    setTimeout(() => {
+      io.emit('areYouReady', null);
+      console.log("readyTICK");
+      if (global.pause) {
+        checkReadyLoop();
+      }
+    }, 1000);
+  }
+  const loop = () => {
+    setTimeout(() => {
+      io.emit('tick', players);
+      loop();
+    }, 1000/60);
+  }
+
   console.log('a user connected');
   addPlayer(socket.id);
 
@@ -23,14 +39,23 @@ io.on('connection', (socket) => {
   io.sockets.emit('allPlayers', players);
   if (numPlayers() >= global.playersNeeded) {
     io.sockets.emit('gameReady', players);
+    checkReadyLoop();
   }
 
   socket.on('ready', function(name) {
     if (!players[socket.id]) {
+      console.log("adding player based on ready signal");
       addPlayer(socket.id);
+      io.sockets.emit('allPlayers', players);
     }
+
+    if (players[socket.id].ready) {
+      return;
+    }
+
     players[socket.id].ready = true;
     players[socket.id].name = name;
+
     let playersReady = 0;
     for (let id in players) {
       playersReady += players[id].ready?1:0;
@@ -42,6 +67,8 @@ io.on('connection', (socket) => {
       global.pause = false;
       io.sockets.emit('pause', false);
     }
+
+    io.sockets.emit('gameReady', players);
   });
 
   socket.on('disconnect', function () {
@@ -64,16 +91,15 @@ io.on('connection', (socket) => {
     delete players[socket.id];
   });
 
-  socket.on('gameOver', function () {
-    /* Game over! We don't need to keep track of state anymore. Clear everything we've set, and wait for enough people to be ready */
-    global.pause = true;
-    players = {};
-    checkReadyLoop();
-  });
-
   socket.on('clientNewGame', function() {
     console.log("Winner wants to play a new game");
     io.sockets.emit('serverNewGame', false);
+    /* wait until we have enough people, then let players say they're ready */
+    global.pause = true;
+    players = {};
+
+    /* Ask all clients if they're ready */
+    checkReadyLoop();
   });
 
   // when a player moves, update the player data
@@ -84,22 +110,7 @@ io.on('connection', (socket) => {
   });
 
   /* Send a 'tick' update to all players 60 times a second */
-  const checkReadyLoop = () => {
-    setTimeout(() => {
-      io.emit('areYouReady', null);
-      if (global.pause) {
-        checkReadyLoop();
-      }
-    }, 1000);
-  }
   checkReadyLoop();
-
-  const loop = () => {
-    setTimeout(() => {
-      io.emit('tick', players);
-      loop();
-    }, 1000/60);
-  }
   loop();
 });
 

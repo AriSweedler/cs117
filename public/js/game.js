@@ -98,7 +98,6 @@ function create()
     };
 
     if (playersLeft == 1 && !global.pause) {
-      console.log("Winner ID: " + global.winnerID);
       let winnerName;
       global.otherPlayers.getChildren().forEach(function (otherPlayer) {
         if (global.winnerID === otherPlayer.playerId) {
@@ -126,13 +125,14 @@ function create()
     global.ready = false;
     global.walls.clear(true, true);
     global.otherPlayers.clear(true, true);
-    document.getElementById('ready-btn').disabled = true;
+    document.getElementById('ready-btn').disabled = false;
     document.querySelector('.modal#ready').style.display = 'grid';
     document.querySelector('.modal#winner').style.display = 'none';
   });
 
   this.socket.on('gameReady', function () {
     /* The game is ready. Players can now say that they are ready. When all players say this, game starts */
+    console.log("Game ready. Waiting on all players to assert their readyness");
     document.getElementById('ready-btn').disabled = false;
   });
 
@@ -245,7 +245,6 @@ function placeWall(ship) {
 function newGame() {
   /* Alert the thing that we want a new game */
   console.log("Winner wants to play a new game");
-  ship.clear(true, true);
   ship = global.ship = null;
   global.socket.emit('clientNewGame', null);
 }
