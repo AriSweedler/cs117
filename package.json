@@ -1,6 +1,9 @@
 {
   "name": "swurve",
   "version": "1.0.0",
+  "engines": {
+    "node": "8.11.3"
+  },
   "description": "UCLA CS 117 final project",
   "main": "server.js",
   "scripts": {
