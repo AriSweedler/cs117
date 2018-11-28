@@ -102,7 +102,7 @@ function addPlayer(playerId) {
   };
 }
 
-const PORT = 80;
+const PORT = process.env.PORT || 8000;
 server.listen(PORT, function () {
   console.log(`Listening on ${server.address().port}`);
 });
