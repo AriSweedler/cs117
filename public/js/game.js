@@ -60,7 +60,6 @@ function create()
     global.otherPlayers.getChildren().forEach(function (otherPlayer) {
       otherPlayer.name = players[otherPlayer.playerId].name
     });
-    console.log(global.otherPlayers);
   });
 
   this.socket.on('disconnect', function (playerId) {
@@ -107,14 +106,29 @@ function create()
         }
       });
 
-      document.getElementById('winner-modal').style.display = 'grid';
+      document.getElementById('winner').style.display = 'grid';
       if (winnerName === undefined) {
-        document.getElementById('winner').innerHTML = "You won!!";
-        /* TODO give winner opportunity to play again */
+        document.getElementById('winner').innerHTML = `
+          <div>
+            <h1>"You won!!"</h1>
+            <button id="new-game-btn" onclick="newGame()">Play again?</button>
+          </div>
+        `;
       } else {
-        document.getElementById('winner').innerHTML = `The winner is ${winnerName}`;
+        document.getElementById('winner').innerHTML = `<h1>The winner is ${winnerName}</h1>`;
       }
     }
+  });
+
+  this.socket.on('serverNewGame', function (players) {
+    console.log("Server wants to start a new game");
+    global.pause = true;
+    global.ready = false;
+    global.walls.clear(true, true);
+    global.otherPlayers.clear(true, true);
+    document.getElementById('ready-btn').disabled = true;
+    document.querySelector('.modal#ready').style.display = 'grid';
+    document.querySelector('.modal#winner').style.display = 'none';
   });
 
   this.socket.on('gameReady', function () {
@@ -147,7 +161,7 @@ function update()
     ship.y -= 2*diff;
   }
 
-  /* emit player movement */
+  /* send player location to the server */
   const shipState = { x: ship.x, y: ship.y, rotation: ship.rotation, color: ship.color };
   this.socket.emit('playerMovement', shipState);
 
@@ -226,4 +240,12 @@ function placeWall(ship) {
   global.walls.create(pos.x, pos.y, 'wall')
       .setTint(ship.color)
       .setCircle(global.wallRadius);
+}
+
+function newGame() {
+  /* Alert the thing that we want a new game */
+  console.log("Winner wants to play a new game");
+  ship.clear(true, true);
+  ship = global.ship = null;
+  global.socket.emit('clientNewGame', null);
 }

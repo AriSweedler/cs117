@@ -24,26 +24,26 @@
   width: 80%;
 }
 
-#ready-btn {
+button {
   border: 1px solid #0066cc;
   background-color: #0099cc;
   color: #ffffff;
   padding: 5px 10px;
 }
 
-#ready-btn:hover {
+button:hover {
   border: 1px solid #0099cc;
   background-color: #00aacc;
 }
 
-#ready-btn:disabled,
-#ready-btn[disabled]{
+button:disabled,
+button[disabled]{
   border: 1px solid #d66161;
   background-color: #cccccc;
   color: #666666;
 }
 
-#ready-btn:disabled::after,
-#ready-btn[disabled]::after{
+button:disabled::after,
+button[disabled]::after{
   content: " (disabled until enough players connect)";
 }

@@ -2,7 +2,7 @@ const express = require('express');
 const app = express();
 const server = require('http').Server(app);
 const io = require('socket.io').listen(server);
-const players = {};
+var players = {};
 const numPlayers = () => Object.keys(players).length;
 const global = {
   playersNeeded: 2,
@@ -26,6 +26,9 @@ io.on('connection', (socket) => {
   }
 
   socket.on('ready', function(name) {
+    if (!players[socket.id]) {
+      addPlayer(socket.id);
+    }
     players[socket.id].ready = true;
     players[socket.id].name = name;
     let playersReady = 0;
@@ -48,12 +51,29 @@ io.on('connection', (socket) => {
 
     // emit a message to all players to remove this player
     io.emit('disconnect', socket.id);
+
+    /* If there're 0 players left, then set game to new game state */
+    if (numPlayers() === 0) {
+      prepareNewGame();
+    }
   });
 
   socket.on('playerDied', function () {
     // console.log('player hit a wall! Too bad.');
     // remove this player from our players object, so we don't update dead player state
     delete players[socket.id];
+  });
+
+  socket.on('gameOver', function () {
+    /* Game over! We don't need to keep track of state anymore. Clear everything we've set, and wait for enough people to be ready */
+    global.pause = true;
+    players = {};
+    checkReadyLoop();
+  });
+
+  socket.on('clientNewGame', function() {
+    console.log("Winner wants to play a new game");
+    io.sockets.emit('serverNewGame', false);
   });
 
   // when a player moves, update the player data
@@ -63,30 +83,34 @@ io.on('connection', (socket) => {
     players[socket.id].rotation = playerData.rotation;
   });
 
-    /* Send a 'tick' update to all players 60 times a second */
-    const checkReadyLoop = () => {
-      setTimeout(() => {
-        io.emit('areYouReady', null);
-        if (global.pause) {
-          checkReadyLoop();
-        }
-      }, 1000);
-    }
-    checkReadyLoop();
-  
-    const loop = () => {
-      setTimeout(() => {
-        io.emit('tick', players);
-        loop();
-      }, 1000/60);
-    }
-    loop();
+  /* Send a 'tick' update to all players 60 times a second */
+  const checkReadyLoop = () => {
+    setTimeout(() => {
+      io.emit('areYouReady', null);
+      if (global.pause) {
+        checkReadyLoop();
+      }
+    }, 1000);
+  }
+  checkReadyLoop();
+
+  const loop = () => {
+    setTimeout(() => {
+      io.emit('tick', players);
+      loop();
+    }, 1000/60);
+  }
+  loop();
 });
 
 function getRandom(range) {
   const padding = 0.1 * range;
   const randRange = range - 2*padding
   return Math.floor(Math.random() * randRange) + padding;
+}
+
+function getRandomColor() {
+  return (Math.random()*0xFFFFFF);
 }
 
 // create a new player and add it to our players object
@@ -97,9 +121,13 @@ function addPlayer(playerId) {
     y: getRandom(600),
     playerId: playerId,
     ready: false,
-    color: (Math.floor(Math.random() * 2) == 0) ? 0xff0000 : 0x0000ff,
-    name: "bob"
+    color: getRandomColor(),
   };
+}
+
+function prepareNewGame() {
+  players = {};
+  global.pause = true;
 }
 
 const PORT = process.env.PORT || 8000;
