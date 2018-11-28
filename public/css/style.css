@@ -21,8 +21,7 @@
   justify-self: center;
   align-self: center;
   padding: 20px;
-  border: 1px solid #888;
-  width: 80%; /* Could be more or less, depending on screen size */
+  width: 80%;
 }
 
 #ready-btn {
@@ -35,8 +34,6 @@
 #ready-btn:hover {
   border: 1px solid #0099cc;
   background-color: #00aacc;
-  color: #ffffff;
-  padding: 5px 10px;
 }
 
 #ready-btn:disabled,
@@ -44,7 +41,6 @@
   border: 1px solid #d66161;
   background-color: #cccccc;
   color: #666666;
-
 }
 
 #ready-btn:disabled::after,

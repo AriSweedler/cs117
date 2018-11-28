@@ -22,12 +22,12 @@ io.on('connection', (socket) => {
   // send the players object to all players
   io.sockets.emit('allPlayers', players);
   if (numPlayers() >= global.playersNeeded) {
-    console.log("Awaiting confirmation from all players");
     io.sockets.emit('gameReady', players);
   }
 
-  socket.on('ready', function() {
+  socket.on('ready', function(name) {
     players[socket.id].ready = true;
+    players[socket.id].name = name;
     let playersReady = 0;
     for (let id in players) {
       playersReady += players[id].ready?1:0;
@@ -35,6 +35,7 @@ io.on('connection', (socket) => {
 
     if (playersReady >= global.playersNeeded && global.pause) {
       console.log("START");
+      io.sockets.emit('namePlayers', players);
       global.pause = false;
       io.sockets.emit('pause', false);
     }
@@ -66,7 +67,7 @@ io.on('connection', (socket) => {
     const checkReadyLoop = () => {
       setTimeout(() => {
         io.emit('areYouReady', null);
-        if (global.pause !== false) {
+        if (global.pause) {
           checkReadyLoop();
         }
       }, 1000);

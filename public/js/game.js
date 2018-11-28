@@ -21,7 +21,6 @@ var global = {
   wallDelay: 7,
   wallRadius: 8,
   playerRadius: 5,
-  players: {},
   pause: true,
   ready: false
 }
@@ -55,6 +54,15 @@ function create()
     }
   });
 
+  this.socket.on('namePlayers', function (players) {
+    /* clear walls */
+    global.walls.clear(true, true);
+    global.otherPlayers.getChildren().forEach(function (otherPlayer) {
+      otherPlayer.name = players[otherPlayer.playerId].name
+    });
+    console.log(global.otherPlayers);
+  });
+
   this.socket.on('disconnect', function (playerId) {
     global.otherPlayers.getChildren().forEach(function (otherPlayer) {
       if (playerId === otherPlayer.playerId) {
@@ -67,7 +75,8 @@ function create()
   this.socket.on('areYouReady', function () {
     if (global.ready === true) {
       document.querySelector('.modal').style.display = 'none';
-      self.socket.emit('ready', null);
+      global.myName = document.getElementById('name').value;
+      self.socket.emit('ready', global.myName);
     }
   });
 
@@ -76,7 +85,7 @@ function create()
     let playersLeft = 0;
     for (let id in players) {
       playersLeft++;
-      global.winner = id;
+      global.winnerID = id;
       if (id == global.socket) {
         continue;
       }
@@ -90,9 +99,21 @@ function create()
     };
 
     if (playersLeft == 1 && !global.pause) {
-      console.log(`${global.winner} is the winner`);
-      document.getElementById('winner-modal').style.display = 'block';
-      document.getElementById('winner').innerHTML = global.winner;
+      console.log("Winner ID: " + global.winnerID);
+      let winnerName;
+      global.otherPlayers.getChildren().forEach(function (otherPlayer) {
+        if (global.winnerID === otherPlayer.playerId) {
+          winnerName = players[global.winnerID].name;
+        }
+      });
+
+      document.getElementById('winner-modal').style.display = 'grid';
+      if (winnerName === undefined) {
+        document.getElementById('winner').innerHTML = "You won!!";
+        /* TODO give winner opportunity to play again */
+      } else {
+        document.getElementById('winner').innerHTML = `The winner is ${winnerName}`;
+      }
     }
   });
 
