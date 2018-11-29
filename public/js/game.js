@@ -22,7 +22,8 @@ var global = {
   wallRadius: 8,
   playerRadius: 5,
   pause: true,
-  ready: false
+  ready: false,
+  wasReady : false,
 }
 
 var game = new Phaser.Game(config);
@@ -43,8 +44,7 @@ function create()
 
   /* Recv all the players in the game from the server, place them in the start position */
   this.socket.on('allPlayers', function (players) {
-    /* clear walls */
-    global.walls.clear(true, true);
+    console.log("Got an all players request");
     for (let id in players) {
       if (id == global.socket.id) {
         addMyself(self, players[id]);
@@ -52,14 +52,6 @@ function create()
         addOtherPlayers(self, players[id]);
       }
     }
-  });
-
-  this.socket.on('namePlayers', function (players) {
-    /* clear walls */
-    global.walls.clear(true, true);
-    global.otherPlayers.getChildren().forEach(function (otherPlayer) {
-      otherPlayer.name = players[otherPlayer.playerId].name
-    });
   });
 
   this.socket.on('disconnect', function (playerId) {
@@ -72,8 +64,12 @@ function create()
   });
 
   this.socket.on('areYouReady', function () {
-    if (global.ready === true) {
-      document.querySelector('.modal').style.display = 'none';
+    console.log("Server wants to know if I'm ready");
+    if (global.wasReady === false && global.ready === true) {
+      global.ready = false;
+      global.wasReady = true;
+      console.log("I have declared my readyness");
+      document.querySelector('.modal#ready').style.display = 'none';
       global.myName = document.getElementById('name').value;
       self.socket.emit('ready', global.myName);
     }
@@ -107,14 +103,10 @@ function create()
 
       document.getElementById('winner').style.display = 'grid';
       if (winnerName === undefined) {
-        document.getElementById('winner').innerHTML = `
-          <div>
-            <h1>"You won!!"</h1>
-            <button id="new-game-btn" onclick="newGame()">Play again?</button>
-          </div>
-        `;
+        document.getElementById('winner-string').innerHTML = `"You won!!"`;
+        document.getElementById("new-game-btn").style.display = 'grid';
       } else {
-        document.getElementById('winner').innerHTML = `<h1>The winner is ${winnerName}</h1>`;
+        document.getElementById('winner-string').innerHTML = `The winner is ${winnerName}`;
       }
     }
   });
@@ -123,8 +115,10 @@ function create()
     console.log("Server wants to start a new game");
     global.pause = true;
     global.ready = false;
+    global.wasReady = false;
     global.walls.clear(true, true);
     global.otherPlayers.clear(true, true);
+    global.ship = null;
     document.getElementById('ready-btn').disabled = false;
     document.querySelector('.modal#ready').style.display = 'grid';
     document.querySelector('.modal#winner').style.display = 'none';
@@ -137,6 +131,7 @@ function create()
   });
 
   this.socket.on('pause', function (value) {
+    console.log(`Server told me to set pause to ${value} (was ${global.pause})`);
     global.pause = value;
   });
 
@@ -183,6 +178,7 @@ var ship;
 function addMyself(self, playerInfo) {
   /*  Don't add myself twice */
   if (global.ship) {return;}
+  console.log("  adding myself");
 
   ship = global.ship = self.ship = self.physics.add.image(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5);
   ship.color = playerInfo.color;
@@ -201,11 +197,12 @@ function addMyself(self, playerInfo) {
 function addOtherPlayers(self, playerInfo) {
   /* Don't add other player twice */
   for (let id in global.players) {
-    if (id === playerInfo.playerId) {
-      console.log("player already added");
+    if (global.players[id].name === playerInfo.name) {
+      console.log("  other player already added");
       return;
     }
   }
+  console.log("  adding other");
 
   /* create other player object */
   let otherPlayer = self.add.sprite(playerInfo.x, playerInfo.y, 'player').setOrigin(0.5, 0.5).setTint(playerInfo.color);
@@ -216,11 +213,13 @@ function addOtherPlayers(self, playerInfo) {
   otherPlayer.rotation = playerInfo.rotation;
   otherPlayer.x = playerInfo.x;
   otherPlayer.y = playerInfo.y;
+  otherPlayer.name = playerInfo.name;
   /* allow other player to place walls */
   otherPlayer.wallPosition = new Array(global.wallDelay + 10).fill({x: -100, y: -100});
 
   /* add otherPlayer to the "otherPlayers" physics group */
   global.otherPlayers.add(otherPlayer);
+  console.log(global.otherPlayers)
 }
 
 function hitWall() {

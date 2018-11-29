@@ -19,7 +19,6 @@ io.on('connection', (socket) => {
   const checkReadyLoop = () => {
     setTimeout(() => {
       io.emit('areYouReady', null);
-      console.log("readyTICK");
       if (global.pause) {
         checkReadyLoop();
       }
@@ -44,12 +43,13 @@ io.on('connection', (socket) => {
 
   socket.on('ready', function(name) {
     if (!players[socket.id]) {
-      console.log("adding player based on ready signal");
+      console.log(`  adding player ${name} based on ready signal`);
       addPlayer(socket.id);
       io.sockets.emit('allPlayers', players);
     }
 
     if (players[socket.id].ready) {
+      console.log("  Player is already ready");
       return;
     }
 
@@ -61,9 +61,11 @@ io.on('connection', (socket) => {
       playersReady += players[id].ready?1:0;
     }
 
+    console.log(`  Player '${name}' is now ready - that's ${playersReady}/${global.playersNeeded} ready players`);
+
     if (playersReady >= global.playersNeeded && global.pause) {
       console.log("START");
-      io.sockets.emit('namePlayers', players);
+      io.sockets.emit('allPlayers', players);
       global.pause = false;
       io.sockets.emit('pause', false);
     }
