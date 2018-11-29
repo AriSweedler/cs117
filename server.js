@@ -37,7 +37,7 @@ io.on('connection', (socket) => {
   // send the players object to all players
   io.sockets.emit('allPlayers', players);
   if (numPlayers() >= global.playersNeeded) {
-    io.sockets.emit('gameReady', players);
+    io.sockets.emit('gameReady', 0);
     checkReadyLoop();
   }
 
@@ -70,7 +70,7 @@ io.on('connection', (socket) => {
       io.sockets.emit('pause', false);
     }
 
-    io.sockets.emit('gameReady', players);
+    io.sockets.emit('gameReady', playersReady);
   });
 
   socket.on('disconnect', function () {
@@ -95,6 +95,7 @@ io.on('connection', (socket) => {
 
   socket.on('clientNewGame', function() {
     console.log("Winner wants to play a new game");
+    io.sockets.emit('gameReady', 0 );
     io.sockets.emit('serverNewGame', false);
     /* wait until we have enough people, then let players say they're ready */
     global.pause = true;

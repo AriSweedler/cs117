@@ -1,8 +1,8 @@
 var config = {
   type: Phaser.AUTO,
   parent: 'phaser-example',
-  width: 800,
-  height: 600,
+  width: 1200,
+  height: 800,
   physics: {
     default: 'arcade',
     arcade: {
@@ -72,6 +72,7 @@ function create()
       document.querySelector('.modal#ready').style.display = 'none';
       global.myName = document.getElementById('name').value;
       self.socket.emit('ready', global.myName);
+      makeBorder();
     }
   });
 
@@ -107,6 +108,7 @@ function create()
         document.getElementById("new-game-btn").style.display = 'grid';
       } else {
         document.getElementById('winner-string').innerHTML = `The winner is ${winnerName}`;
+        document.getElementById("new-game-btn").style.display = 'none';
       }
     }
   });
@@ -124,10 +126,12 @@ function create()
     document.querySelector('.modal#winner').style.display = 'none';
   });
 
-  this.socket.on('gameReady', function () {
+  this.socket.on('gameReady', function (numReady) {
     /* The game is ready. Players can now say that they are ready. When all players say this, game starts */
     console.log("Game ready. Waiting on all players to assert their readyness");
     document.getElementById('ready-btn').disabled = false;
+    console.log(numReady);
+    document.getElementById('ready-count').innerHTML = `Players ready: ${numReady}`;
   });
 
   this.socket.on('pause', function (value) {
@@ -143,18 +147,8 @@ function update()
   if (!ship || global.pause || ship.dead === true) {
     return;
   }
-  
-  this.physics.add.overlap(ship, global.walls, hitWall, null, this);
 
-  /* clamp player position - for now  */
-  if (ship.x < 0 || ship.x > config.width) {
-    let diff = ship.x - config.width/2
-    ship.x -= 2*diff;
-  }
-  if (ship.y < 0 || ship.y > config.height) {
-    let diff = ship.y - config.height/2
-    ship.y -= 2*diff;
-  }
+  this.physics.add.overlap(ship, global.walls, hitWall, null, this);
 
   /* send player location to the server */
   const shipState = { x: ship.x, y: ship.y, rotation: ship.rotation, color: ship.color };
@@ -239,6 +233,17 @@ function placeWall(ship) {
   global.walls.create(pos.x, pos.y, 'wall')
       .setTint(ship.color)
       .setCircle(global.wallRadius);
+}
+
+function makeBorder() {
+  for (let i = 0; i < config.width; i++) {
+    global.walls.create(i, 0, 'wall').setTint(ship.color).setCircle(global.wallRadius);
+    global.walls.create(i, config.height, 'wall').setTint(ship.color).setCircle(global.wallRadius);
+  }
+  for (let i = 0; i < config.height; i++) {
+    global.walls.create(0, i, 'wall').setTint(ship.color).setCircle(global.wallRadius);
+    global.walls.create(config.width, i, 'wall').setTint(ship.color).setCircle(global.wallRadius);
+  }
 }
 
 function newGame() {
