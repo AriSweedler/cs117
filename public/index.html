@@ -14,13 +14,17 @@
 
     <div class="modal" id="ready">
       <button id="ready-btn" disabled onclick="global.ready = true;">I am ready</button>
-      <h3 id="ready-count"></h3>
+      <h3 id="ready-count">No one else online</h3>
       <input id="name" type="text" placeholder="Your name">
     </div>
 
-    <div class="modal" id="winner" style="display: none">
+    <div class="modal" id="winner" style="display: none;">
       <h1 id="winner-string"></h1>
       <button id="new-game-btn" style="display: none" onclick="newGame()">Play again?</button>
+    </div>
+
+    <div class="modal" id="start" style="display: none;">
+      <h1>Game is starting in 2 seconds!</h1>
     </div>
 
   </body>

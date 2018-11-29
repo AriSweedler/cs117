@@ -72,7 +72,6 @@ function create()
       document.querySelector('.modal#ready').style.display = 'none';
       global.myName = document.getElementById('name').value;
       self.socket.emit('ready', global.myName);
-      makeBorder();
     }
   });
 
@@ -136,7 +135,11 @@ function create()
 
   this.socket.on('pause', function (value) {
     console.log(`Server told me to set pause to ${value} (was ${global.pause})`);
-    global.pause = value;
+    document.querySelector('.modal#start').style.display = 'grid';
+    setTimeout(() => {
+      document.querySelector('.modal#start').style.display = 'none';
+      global.pause = value;
+    }, 1500)
   });
 
   this.cursors = this.input.keyboard.createCursorKeys();
@@ -186,6 +189,7 @@ function addMyself(self, playerInfo) {
 
   /* set the collision body of this dude to a circle of radius 8 */
   ship.setCircle(global.playerRadius);
+  makeBorder();
 }
 
 function addOtherPlayers(self, playerInfo) {
@@ -213,7 +217,6 @@ function addOtherPlayers(self, playerInfo) {
 
   /* add otherPlayer to the "otherPlayers" physics group */
   global.otherPlayers.add(otherPlayer);
-  console.log(global.otherPlayers)
 }
 
 function hitWall() {
