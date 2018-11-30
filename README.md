@@ -26,7 +26,13 @@ We will be making a networked version of Achtung die curve
 * [Sockets.io](https://socket.io/), a JavaScript library that makes network communication suuuuuper easy. Suuuuper rad.
   
 
-## Installation
+## Installation - client
+
+### Nothing. You already have a web browser on your machine
+
+Make a query to the hosting server. Whether that's localhost:8000 or 192.168.x.x:xyz or 117.sweedler.com or swurve.herokuapp.com, it doesn't matter.
+
+## Installation - server
 
 ### short version
 1. clone this repo
